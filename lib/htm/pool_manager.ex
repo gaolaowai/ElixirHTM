@@ -66,7 +66,6 @@ defmodule HTM.PoolManager do
 
     newstate = %{ state | poolstate: Map.update(state.poolstate, l_id, score, fn x -> if(resting) do 0.0 else x end end ) }
 
-
     HTM.Counter.increment(score)
     counter_state = HTM.Counter.value()
     average = counter_state.current_avg
@@ -77,9 +76,9 @@ defmodule HTM.PoolManager do
        |> Enum.sort_by( &(get_value_from_tuple(&1)), :desc)
        |> Enum.take(@sparsity)
       IO.puts "Winners are: #{inspect winners}"
-      # _ = for column <- winners, do: GenServer.cast(column, :strengthen_connections)
+      _ = for {column, score} <- winners, do: GenServer.cast(column, :strengthen_connections)
 
-      IO.inspect ((System.os_time() - state.start_time)/1_000_000_000)
+      IO.inspect ((System.os_time() - state.start_time)/1_000_000_000) # The result of "System.os_time()" is ns! Times by a million to get ms.
       IO.puts "After counter #{counter_state.counter}: #{inspect HTM.Counter.value()}"
     end
 
