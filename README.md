@@ -5,6 +5,8 @@
 All application logic lives in the \lib directory.
 
 ## Setup
+https://elixir-lang.org/getting-started/introduction.html
+
 1. Clone locally, then navigate into ELIXIRHTM directory.
 2. Assuming that Elixir >=1.4 is installed on your system, type:
 ```elixir
