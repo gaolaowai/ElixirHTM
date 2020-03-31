@@ -1,0 +1,5 @@
+# To convert list of ints, representing bits, into an integer representation.
+for i <- [1,0,0,1,1,0,0,1,0,0,0,1,1,1,0,0], do: <<>>, into: <<i::1>>  
+
+# To convert list of ints, representing bits, into a a list of bits.
+for i <- [0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0], do: <<i::1>> 
