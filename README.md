@@ -42,3 +42,6 @@ Currently can only startup a single pool, but I plan to allow multiple pools for
 3. Write some basic tests. That would be nice.
 4. Create some nicer abstractions, such as ability to spawn multiple pools, better WebUI, etc.
 
+Including native functions (where existing Erlang functions aren't speedy enough):
+http://blog.techdominator.com/article/using-cpp-elixir-nifs.html
+
