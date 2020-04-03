@@ -45,3 +45,6 @@ Currently can only startup a single pool, but I plan to allow multiple pools for
 Including native functions (where existing Erlang functions aren't speedy enough):
 http://blog.techdominator.com/article/using-cpp-elixir-nifs.html
 
+For example, to store connections as matrices instead of lists of bits. Early research is leaning me towards:
+https://github.com/versilov/matrex
+
