@@ -4,7 +4,8 @@ defmodule HTM.PoolManager do
   alias HTM.Column
   alias HTM.BitMan
 
-  @number_of_columns 10000 # acts like a global within this module
+  @number_of_columns 2000 # acts like a global within this module
+  @connection_percent_to_sdr .7
   @sparsity trunc(@number_of_columns / 0.02)
 
   def start_links(args) do
@@ -18,7 +19,8 @@ defmodule HTM.PoolManager do
     # Start a number of processes, returning their pids as a list to be stored in local state.
     columns = for i <- Range.new(1, @number_of_columns), do: Column.start(i, default_distals)
 
-    state = %{columns: columns, poolstate: %{}, counter: 0, start_time: System.os_time(), stop_time: System.os_time() }
+    state = %{columns: columns, poolstate: %{}, prevwinners: %{}, counter: 0, start_time: System.os_time(), stop_time: System.os_time() }
+
     HTM.Counter.start_link(0)
     GenServer.start_link(__MODULE__, state, name: __MODULE__)
   end
@@ -33,7 +35,7 @@ defmodule HTM.PoolManager do
 
   def start_pool(sdr_length) do
     sdr_length = sdr_length |> String.to_integer
-    number_of_connections = (sdr_length * 0.7|> Kernel.trunc)
+    number_of_connections = (sdr_length * @connection_percent_to_sdr|> Kernel.trunc)
     args = %{sdr_size: sdr_length, number_of_connections: number_of_connections}
     GenServer.cast(HTM.KickStarter, {:start_pool, args})
   end
@@ -70,7 +72,7 @@ defmodule HTM.PoolManager do
     counter_state = HTM.Counter.value()
     average = counter_state.current_avg
     # IO.puts "poolstate counter: #{HTM.Counter.value()}"
-    if(counter_state.counter > 9999) do
+    if(counter_state.counter > @number_of_columns - 1) do
       # Choose some winners!
       winners = Enum.reject(newstate.poolstate, fn ({key, value}) -> value < average end)
        |> Enum.sort_by( &(get_value_from_tuple(&1)), :desc)
@@ -78,9 +80,16 @@ defmodule HTM.PoolManager do
       IO.puts "Winners are: #{inspect winners}"
       _ = for {column, score} <- winners, do: GenServer.cast(column, :strengthen_connections)
 
-      IO.inspect ((System.os_time() - state.start_time)/1_000_000_000) # The result of "System.os_time()" is ns! Times by a million to get ms.
+      IO.inspect ((System.os_time() - state.start_time)/1_000_000) # The result of "System.os_time()" is us!
       IO.puts "After counter #{counter_state.counter}: #{inspect HTM.Counter.value()}"
     end
+
+    {:reply, :ok, newstate}
+  end
+
+  def handle_call({:i_won, {l_id, cell}}, _from, state) do
+    # add winner to ce
+    newstate = %{ state | prevwinners: Map.update(state.prevwinners, l_id, cell, cell) }
 
     {:reply, :ok, newstate}
   end
@@ -102,6 +111,10 @@ defmodule HTM.PoolManager do
 
   defp get_value_from_tuple({key, value}) do
     value
+  end
+
+  defp resetwinners(state) do
+    %{ state | prevwinners: %{} }
   end
 
 end

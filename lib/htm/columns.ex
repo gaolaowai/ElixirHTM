@@ -65,8 +65,17 @@ defmodule HTM.Column do
   def handle_cast(:strengthen_connections, state) do
     # IO.puts "hit cast strengthen..."
     # IO.puts "Before strengthening:  #{inspect state.distal_strengths}"
-    new_strengths = Enum.zip(state.connected_this_turn, state.distal_strengths)
-      |>Enum.reduce([], fn x, acc -> [ strengthen?(x) | acc] end)
+    new_strengths = strengthen_distals(state)
+
+    newstate = %{ state | distal_strengths: new_strengths }
+    # IO.puts "After strengthening:  #{inspect newstate}"
+    {:noreply, newstate}
+  end
+
+  def handle_cast({:strengthen_connections, winners}, state) do
+    # IO.puts "hit cast strengthen..."
+    # IO.puts "Before strengthening:  #{inspect state.distal_strengths}"
+    new_strengths = strengthen_distals(state)
 
     newstate = %{ state | distal_strengths: new_strengths }
     # IO.puts "After strengthening:  #{inspect newstate}"
@@ -141,5 +150,10 @@ defmodule HTM.Column do
       strength
     end
   end
+
+  defp strengthen_distals(state) do
+    Enum.zip(state.connected_this_turn, state.distal_strengths)
+    |> Enum.reduce([], fn x, acc -> [ strengthen?(x) | acc] end)
+  end      
 
 end
