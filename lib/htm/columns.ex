@@ -4,6 +4,7 @@ defmodule HTM.Column do
 
   @strengthen_amount 0.1
   @weaken_amount 0.1
+  @column_depth 10
 
   # Define our state struct for our column
   defmodule State do
@@ -15,10 +16,10 @@ defmodule HTM.Column do
     distal_connections: [],
     sdr_this_turn: [],
     connected_this_turn: [],
-    distal_strengths: [] # holds index of valid connections, to update strengths
-    # distals: [], # will hold tuples of column and cell
-    # distal_strength: %{}, # using tuple as key, update strengths
-    # predictive: false,
+    distal_strengths: [], # holds index of valid connections, to update strengths
+    proximal_cells_connections: %{}, # will hold tuples of columns and cells for TM. Cell connections will be maps of "proximal_column_id: cell_id"
+    proximal_cells_activation_votes: %{}, # using tuple as key, update strengths
+    predictive: false
     # which_predictive: 0
   end
 
@@ -41,21 +42,36 @@ defmodule HTM.Column do
     GenServer.call name, {:check_sdr, sdr}
   end
 
-  # Server Callbacks
+  ############################################
+  #
+  #            Server Callbacks
+  #
+  ############################################
 
   @spec init(atom | %{distal_connections: any}) :: {:ok, atom | %{distal_connections: any}}
   def init(state) do
     # Shuffle our default connection template
     randomized_distals = Enum.shuffle(state.distal_connections)
-    IO.inspect randomized_distals
 
     # Initial strengths
     initial_strengths =
       randomized_distals
-      |>Enum.reduce([], fn x, acc -> [ bit_to_int(x) | acc] end)
-    IO.inspect initial_strengths
+      |> Enum.reduce([], fn x, acc -> [ bit_to_int(x) | acc] end)
 
-    new_state = %{ state | distal_connections: randomized_distals, distal_strengths: initial_strengths}
+    # Create blank proximal connections
+    proximal_cells_connections = for i <- Range.new(1, @column_depth), do: %{i => []} 
+    proximal_cells_connections = proximal_cells_connections |> Enum.reduce(%{}, fn x, acc -> Map.merge(x, acc) end)
+
+    # Create and randomize cell vote map
+    proximal_cells_activation_votes = for i <- Range.new(1, @column_depth), do: %{i => :rand.uniform(20)}
+    proximal_cells_activation_votes = proximal_cells_activation_votes 
+      |> Enum.reduce(%{}, fn x, acc -> Map.merge(x, acc) end)
+
+    new_state = %{ state | distal_connections: randomized_distals, 
+                           distal_strengths: initial_strengths, 
+                           proximal_cells_connections: proximal_cells_connections,
+                           proximal_cells_activation_votes: proximal_cells_activation_votes
+                 }
 
     # Process.link(HTM.PoolManager)
 
@@ -63,19 +79,27 @@ defmodule HTM.Column do
   end
 
   def handle_cast(:strengthen_connections, state) do
-    # IO.puts "hit cast strengthen..."
-    # IO.puts "Before strengthening:  #{inspect state.distal_strengths}"
     new_strengths = strengthen_distals(state)
 
     newstate = %{ state | distal_strengths: new_strengths }
-    # IO.puts "After strengthening:  #{inspect newstate}"
     {:noreply, newstate}
   end
 
+  @doc """
+  Accepts message: {:strengthen_connections, newstate.prevwinners}
+  """
+  # Message coming as --->   {:strengthen_connections, newstate.prevwinners}
   def handle_cast({:strengthen_connections, winners}, state) do
-    # IO.puts "hit cast strengthen..."
-    # IO.puts "Before strengthening:  #{inspect state.distal_strengths}"
     new_strengths = strengthen_distals(state)
+    
+    # Find a winning cell in the column for this pattern
+    winning_cell = find_and_strengthen_winner(state, winners)
+
+    # Tell the pool who won in this column (used as "winners" for the next round)
+    report_winner_cell(state, winning_cell)
+
+    # signal proximal connections
+    call_to_proximals({state, winning_cell})
 
     newstate = %{ state | distal_strengths: new_strengths }
     # IO.puts "After strengthening:  #{inspect newstate}"
@@ -84,7 +108,7 @@ defmodule HTM.Column do
 
   def handle_cast(:weaken_connections, state) do
     new_strengths = Enum.zip(state.connected_this_turn, state.distal_strengths)
-      |>Enum.reduce([], fn x, acc -> [ weaken?(x) | acc] end)
+      |> Enum.reduce([], fn x, acc -> [ weaken?(x) | acc] end)
 
     newstate = %{ state | distal_strengths: new_strengths }
     {:noreply, newstate}
@@ -109,6 +133,16 @@ defmodule HTM.Column do
     {:noreply, new_state}
   end
 
+  def handle_cast({:call_me, msg}, state) do
+    new_state = add_callees(state, msg)
+    {:noreply, new_state}
+  end
+
+  def handle_cast({:vote, cell}, state) do
+    new_state = vote_for_cell(state, cell)
+    {:noreply, new_state}
+  end
+
   #
   # Catch-alls
   #
@@ -126,6 +160,13 @@ defmodule HTM.Column do
     IO.puts "Can't touch this! #{inspect message}"
     {:noreply, state}
   end
+
+
+  ############################################
+  #
+  #            Private Functions
+  #
+  ############################################
 
   defp bit_to_int(x) do
     if(x == <<1::1>>) do
@@ -154,6 +195,50 @@ defmodule HTM.Column do
   defp strengthen_distals(state) do
     Enum.zip(state.connected_this_turn, state.distal_strengths)
     |> Enum.reduce([], fn x, acc -> [ strengthen?(x) | acc] end)
-  end      
+  end
+
+  defp report_winner_cell(state, winning_cell) do
+    GenServer.call(HTM.PoolManager, {:i_won, {state.id, winning_cell}})
+    {state, winning_cell}
+  end
+
+  defp call_to_proximals({state, winning_cell}) do
+    _ = for {column, cell} <- state.proximal_cells_connections[winning_cell], do: GenServer.cast(column, {:vote, cell})
+    {state, winning_cell}
+  end
+
+  defp vote_for_cell(state, cell) do
+    %{ state | proximal_cells_activation_votes: 
+                            Map.update(
+                              state.proximal_cells_activation_votes, 
+                              cell, 
+                              state.proximal_cells_activation_votes[cell], 
+                              fn x -> x + 1 end
+                              )
+     }
+  end
+
+  defp find_and_strengthen_winner(state, winners) do
+    
+    # Find winner based on highest value
+    { winning_cell, _ } = state.proximal_cells_activation_votes
+      |> Enum.max_by(fn {key, value} -> value end)
+
+    # Register column:cell with previously winning column:cells
+    # Send :call_me to previously winning cells, with column_id and cell_id, as "{:call_me, {column, cell}}"
+    _ = for {remote_winning_column, remote_winner_cell} <- winners, do: GenServer.cast( remote_winning_column, {:call_me, {state.id, winning_cell, remote_winner_cell} } )
+    
+    {state, winning_cell}
+  end
+
+  defp add_callees(state, {caller_column_id, caller_winning_cell, local_cell}) do
+    # grab, prepend, and bind our existing list
+    # Each "cell" is a list of tuples, in format of {callee_column, callee_cell}
+    new_callee = [ {caller_column_id, caller_winning_cell} | state.proximal_cells_connections[local_cell] ]
+
+    # update it inside state
+    %{ state | proximal_cells_connections: Map.update(state.proximal_cells_connections, local_cell, new_callee, fn x -> x end )}
+
+  end
 
 end

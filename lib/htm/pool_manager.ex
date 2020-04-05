@@ -5,7 +5,7 @@ defmodule HTM.PoolManager do
   alias HTM.BitMan
 
   @number_of_columns 2000 # acts like a global within this module
-  @connection_percent_to_sdr .7
+  @connection_percent_to_sdr 0.7
   @sparsity trunc(@number_of_columns / 0.02)
 
   def start_links(args) do
@@ -77,8 +77,13 @@ defmodule HTM.PoolManager do
       winners = Enum.reject(newstate.poolstate, fn ({key, value}) -> value < average end)
        |> Enum.sort_by( &(get_value_from_tuple(&1)), :desc)
        |> Enum.take(@sparsity)
-      IO.puts "Winners are: #{inspect winners}"
-      _ = for {column, score} <- winners, do: GenServer.cast(column, :strengthen_connections)
+
+      # handle first run
+      if( map_size(state.prevwinners) == 0) do
+        _ = for {column, score} <- winners, do: GenServer.cast( column, :strengthen_connections )
+      else # else send in winners
+        _ = for {column, score} <- winners, do: GenServer.cast( column, {:strengthen_connections, newstate.prevwinners} )
+      end
 
       IO.inspect ((System.os_time() - state.start_time)/1_000_000) # The result of "System.os_time()" is us!
       IO.puts "After counter #{counter_state.counter}: #{inspect HTM.Counter.value()}"
