@@ -22,9 +22,13 @@ defmodule HTM.Column do
     predictive: false
     # which_predictive: 0
   end
-
-  # Client Interface
-
+  @doc """
+  ############################################################
+  #
+  #                   Client Interface
+  #
+  ############################################################
+"""
   def start(id, default_distals) when is_integer(id) do
 
     # Create atom as tag for this column in process registry.
@@ -41,13 +45,13 @@ defmodule HTM.Column do
   def send_sdr(name, sdr) when is_list(sdr) do
     GenServer.call name, {:check_sdr, sdr}
   end
-
-  ############################################
+@doc """
+  ############################################################
   #
-  #            Server Callbacks
+  #                   Server callbacks
   #
-  ############################################
-
+  ############################################################
+"""
   @spec init(atom | %{distal_connections: any}) :: {:ok, atom | %{distal_connections: any}}
   def init(state) do
     # Shuffle our default connection template

@@ -1,0 +1,7 @@
+list_of_maps = for i <- Range.new(1, 10), do: %{i => []} 
+map_of_maps = list_of_maps |> Enum.reduce(%{}, fn x, acc -> Map.merge(x, acc) end)
+
+
+
+list_of_maps = for i <- Range.new(1, 20), do: %{i => :rand.uniform(20)} 
+list_of_maps = list_of_maps |> Enum.reduce([], fn x, acc -> [x | acc] end) |> Enum.reduce(%{}, fn x, acc -> Map.merge(x, acc) end)

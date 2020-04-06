@@ -4,7 +4,7 @@ defmodule HTM.PoolManager do
   alias HTM.Column
   alias HTM.BitMan
 
-  @number_of_columns 2000 # acts like a global within this module
+  @number_of_columns 100000 # acts like a global within this module
   @connection_percent_to_sdr 0.7
   @sparsity trunc(@number_of_columns / 0.02)
 
@@ -19,13 +19,17 @@ defmodule HTM.PoolManager do
     # Start a number of processes, returning their pids as a list to be stored in local state.
     columns = for i <- Range.new(1, @number_of_columns), do: Column.start(i, default_distals)
 
-    state = %{columns: columns, poolstate: %{}, prevwinners: %{}, counter: 0, start_time: System.os_time(), stop_time: System.os_time() }
+    state = %{columns: columns, poolstate: %{}, prevwinners: %{}, counter: 0, start_time: System.os_time(), stop_time: System.os_time(), resting: [] }
 
     HTM.Counter.start_link(0)
     GenServer.start_link(__MODULE__, state, name: __MODULE__)
   end
 
-  # client functions
+  ############################################################
+  #
+  #                   Client Interface
+  #
+  ############################################################
 
   def send_sdr(sdr) do
     sdr = sdr |> String.to_charlist|> BitMan.list_to_bitlist
@@ -67,6 +71,7 @@ defmodule HTM.PoolManager do
     # newstate = %{}
 
     newstate = %{ state | poolstate: Map.update(state.poolstate, l_id, score, fn x -> if(resting) do 0.0 else x end end ) }
+    newstate = %{ state | resting: [l_id | state.resting] }
 
     HTM.Counter.increment(score)
     counter_state = HTM.Counter.value()
