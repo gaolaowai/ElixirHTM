@@ -242,7 +242,7 @@ defmodule HTM.Column do
 
     # update it inside state
     %{ state | proximal_cells_connections: Map.update(state.proximal_cells_connections, local_cell, new_callee, fn x -> x end )}
-
+    IO.inspect new_callee
   end
 
 end

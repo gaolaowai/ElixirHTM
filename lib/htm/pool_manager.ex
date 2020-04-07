@@ -4,7 +4,7 @@ defmodule HTM.PoolManager do
   alias HTM.Column
   alias HTM.BitMan
 
-  @number_of_columns 100000 # acts like a global within this module
+  @number_of_columns 10000 # acts like a global within this module
   @connection_percent_to_sdr 0.7
   @sparsity trunc(@number_of_columns / 0.02)
 
@@ -59,7 +59,7 @@ defmodule HTM.PoolManager do
 
   def handle_cast({:send_sdr, sdr}, state) do
     HTM.Counter.reset()
-    state = %{ state | start_time: System.os_time()}
+    state = %{ state | start_time: System.os_time(), resting: []}
     send_sdr(sdr, state.columns)
     {:noreply, state}
   end
@@ -71,7 +71,7 @@ defmodule HTM.PoolManager do
     # newstate = %{}
 
     newstate = %{ state | poolstate: Map.update(state.poolstate, l_id, score, fn x -> if(resting) do 0.0 else x end end ) }
-    newstate = %{ state | resting: [l_id | state.resting] }
+    newstate = %{ state | resting: [ {l_id, resting} | state.resting] }
 
     HTM.Counter.increment(score)
     counter_state = HTM.Counter.value()
@@ -105,7 +105,7 @@ defmodule HTM.PoolManager do
   end
 
   def handle_call(:pool_state, _from, state) do
-    {:reply, state.poolstate, state}
+    {:reply, state.resting, state}
   end
 
   defp send_sdr(sdr, columns) when is_list(sdr) do
