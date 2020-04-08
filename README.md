@@ -38,10 +38,18 @@ Looking forward to testing it on a threadripper with its 32 cores.
 Currently can only startup a single pool, but I plan to allow multiple pools for simulating geographically different areas of the brain devoted to special functions.
 
 ## TODO:
-1. Better format responses from http server. Right now, it's concatenating. Could format output as JSON, make it nicer and API friendly.
+1. Better format responses from http server. Current it's concatenating and clamping off output.
 2. ~~TM part of HTM. Just need to add bursting handler for handle_cast for columns to choose other columns connections at random.~~ --> DONE!
 3. Write some basic tests. That would be nice.
-4. Create some nicer abstractions, such as ability to spawn multiple pools, better WebUI, etc.
+4. Create some nicer abstractions.
+
+..-such as ability to spawn multiple pools
+
+..-JSON-based API calls
+
+..-better WebUI
+
+..-wxGUI for local operation
 
 Including native functions (where existing Erlang functions aren't speedy enough):
 http://blog.techdominator.com/article/using-cpp-elixir-nifs.html
