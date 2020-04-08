@@ -41,15 +41,11 @@ Currently can only startup a single pool, but I plan to allow multiple pools for
 1. Better format responses from http server. Current it's concatenating and clamping off output.
 2. ~~TM part of HTM. Just need to add bursting handler for handle_cast for columns to choose other columns connections at random.~~ --> DONE!
 3. Write some basic tests. That would be nice.
-4. Create some nicer abstractions.
-
-..-such as ability to spawn multiple pools
-
-..-JSON-based API calls
-
-..-better WebUI
-
-..-wxGUI for local operation
+4. Create some nicer abstractions:
+..* such as ability to spawn multiple pools.
+..* JSON-based API calls.
+..* better WebUI.
+..* wxGUI for local operation.
 
 Including native functions (where existing Erlang functions aren't speedy enough):
 http://blog.techdominator.com/article/using-cpp-elixir-nifs.html
@@ -61,20 +57,20 @@ https://github.com/versilov/matrex
 As I'm trying to get anyone and everyone involved to start using and breaking this, it only seems right to provide a list of resources on Elixir itself. If you have some familarity with Ruby, Elm, or even Erlang, Elixir itself isn't too difficult to parse and pick up.
 
 ## Free online resources for learning:
-"Joy of Elixir" --> Free tutorial progressively going from basic to intermediate level. https://joyofelixir.com/toc.html
+["Joy of Elixir"](https://joyofelixir.com/toc.html) --> Free tutorial progressively going from basic to intermediate level.
 
-"Elixir School" --> Covers from basic all the way to advanced usage, including some OTP concepts. https://elixirschool.com/en/
+["Elixir School"](https://elixirschool.com/en/) --> Covers from basic all the way to advanced usage, including some OTP concepts.
 
-"Getting Started" pages on elixir-lang.org. Beginner to advanced. https://elixir-lang.org/getting-started/introduction.html
+["Getting Started"](https://elixir-lang.org/getting-started/introduction.html) pages on elixir-lang.org. Beginner to advanced.
 
-The "Docs", same domain: https://elixir-lang.org/docs.html
+[The "Docs"](https://elixir-lang.org/docs.html), same domain
 
-"The Soul of Erlang and Elixir" Talk by Saša Jurić, shows use of BEAM in live setting. https://youtu.be/JvBT4XBdoUE
+["The Soul of Erlang and Elixir"](https://youtu.be/JvBT4XBdoUE) Talk by Saša Jurić, shows use of BEAM in live setting.
 
 
 ## Non-free, but *very* useful:
-https://online.pragmaticstudio.com/ --> "Developing with Elixir/OTP" course is worth every penny and taught very well.
+["Developing with Elixir/OTP"](https://online.pragmaticstudio.com/) course is worth every penny and taught very well.
 
-"Elixir in Action", book by Saša Jurić --> Focuses on real-world applications https://www.manning.com/books/elixir-in-action
+["Elixir in Action"](https://www.manning.com/books/elixir-in-action), book by Saša Jurić --> Focuses on real-world applications 
 
- "The Little Elixir & OTP Guidebook", book by Benjamin Tan Wei Hao --> provides more development path and examples with OTP https://www.manning.com/books/the-little-elixir-and-otp-guidebook
+ ["The Little Elixir & OTP Guidebook"](https://www.manning.com/books/the-little-elixir-and-otp-guidebook), book by Benjamin Tan Wei Hao --> provides more development path and examples with OTP.
