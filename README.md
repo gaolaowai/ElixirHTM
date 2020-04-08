@@ -1,6 +1,7 @@
 # HTM
+Based on work and research done by [Numenta](https://numenta.com/) and the [HTM Community!](https://numenta.org/). Other work/experimentation done in this area using Elixir also includes [Elixir_NE](https://github.com/d-led/elixir_ne) and others.
 
-**At second attempt at implementing HTM in Elixir, using OTP**
+**This is a second attempt for me at implementing Numenta's HTM in Elixir, using OTP**
 
 All application logic lives in the \lib directory.
 
@@ -38,7 +39,7 @@ Currently can only startup a single pool, but I plan to allow multiple pools for
 
 ## TODO:
 1. Better format responses from http server. Right now, it's concatenating. Could format output as JSON, make it nicer and API friendly.
-2. TM part of HTM. Just need to add bursting handler for handle_cast for columns to choose other columns connections at random. --> DONE!
+2. ~~TM part of HTM. Just need to add bursting handler for handle_cast for columns to choose other columns connections at random.~~ --> DONE!
 3. Write some basic tests. That would be nice.
 4. Create some nicer abstractions, such as ability to spawn multiple pools, better WebUI, etc.
 
