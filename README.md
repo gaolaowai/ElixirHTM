@@ -48,3 +48,24 @@ http://blog.techdominator.com/article/using-cpp-elixir-nifs.html
 For example, to store connections as matrices instead of lists of bits. Early research is leaning me towards:
 https://github.com/versilov/matrex
 
+# Elixir resources
+As I'm trying to get anyone and everyone involved to start using and breaking this, it only seems right to provide a list of resources on Elixir itself. If you have some familarity with Ruby, Elm, or even Erlang, Elixir itself isn't too difficult to parse and pick up.
+
+## Free online resources for learning:
+"Joy of Elixir" --> Free tutorial progressively going from basic to intermediate level. https://joyofelixir.com/toc.html
+
+"Elixir School" --> Covers from basic all the way to advanced usage, including some OTP concepts. https://elixirschool.com/en/
+
+"Getting Started" pages on elixir-lang.org. Beginner to advanced. https://elixir-lang.org/getting-started/introduction.html
+
+The "Docs", same domain: https://elixir-lang.org/docs.html
+
+"The Soul of Erlang and Elixir" Talk by Saša Jurić, shows use of BEAM in live setting. https://youtu.be/JvBT4XBdoUE
+
+
+## Non-free, but *very* useful:
+https://online.pragmaticstudio.com/ --> "Developing with Elixir/OTP" course is worth every penny and taught very well.
+
+"Elixir in Action", book by Saša Jurić --> Focuses on real-world applications https://www.manning.com/books/elixir-in-action
+
+ "The Little Elixir & OTP Guidebook", book by Benjamin Tan Wei Hao --> provides more development path and examples with OTP https://www.manning.com/books/the-little-elixir-and-otp-guidebook
