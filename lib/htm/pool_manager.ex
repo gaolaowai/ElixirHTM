@@ -6,7 +6,8 @@ defmodule HTM.PoolManager do
 
   @number_of_columns 10000 # acts like a global within this module
   @connection_percent_to_sdr 0.7
-  @sparsity trunc(@number_of_columns / 0.02)
+  @sparsity_percentage 0.02 #between 0.00 and 1.0
+  @sparsity trunc(@number_of_columns / @sparsity_percentage)
 
   def start_links(args) do
 
@@ -126,13 +127,7 @@ defmodule HTM.PoolManager do
   defp resetwinners(state) do
     %{ state | prevwinners: %{} }
   end
-
 end
-
-
-
-
-
 
 defmodule HTM.Counter do
   use Agent

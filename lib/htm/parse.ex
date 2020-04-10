@@ -17,12 +17,13 @@ defmodule HTM.Parser do
     IO.puts "Headers: #{inspect(headers)}"
 
     params = parse_params(headers["Content-Type"], params_string)
-
+    IO.puts "params_string: #{inspect params_string}"
     %Conv{
       method: method,
       path: path,
       params: params,
-      headers: headers
+      headers: headers,
+      message_body: Poison.decode!(params_string)
     }
   end
 

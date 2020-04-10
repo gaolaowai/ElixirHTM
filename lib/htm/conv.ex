@@ -5,7 +5,8 @@ defmodule HTM.Conv do
     resp_body: "",
     status: nil,
     params: %{},
-    headers: %{}
+    headers: %{},
+    message_body: %{}
   ]
 
   def full_status(conv) do

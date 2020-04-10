@@ -62,9 +62,9 @@ defmodule HTM.HttpServer do
   def read_request(client_socket) do
     {:ok, request} = :gen_tcp.recv(client_socket, 0) # all available bytes
 
-    # IO.puts "➡️  Received request:\n"
+    IO.puts "➡️  Received request:\n"
     # IO.puts request
-
+    IO.puts "Raw request: #{inspect request}"
     request
   end
 

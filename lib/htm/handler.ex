@@ -11,6 +11,7 @@ defmodule HTM.Handler do
 
   alias HTM.Conv
   alias HTM.BitMan
+  alias HTM.JsonDispatcher
 
   @pages_path Path.expand("../../pages", __DIR__)
   @doc """
@@ -38,6 +39,12 @@ defmodule HTM.Handler do
   def route(%Conv{ method: "GET", path: "/pool/start/" <> sdr_length } = conv) do
     HTM.PoolManager.start_pool(sdr_length)
     %{ conv| status: 200, resp_body: "Pool started..." }
+  end
+
+  def route(%Conv{ method: "POST", path: "/API/JSON"} = conv) do
+    IO.puts "conv object: #{inspect conv}"
+    response = JsonDispatcher.handle_json(conv.message_body)
+    %{ conv| status: 200, resp_body: inspect response }
   end
 
   def route(%Conv{ method: "GET", path: "/pool/state/" } = conv) do
