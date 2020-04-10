@@ -74,3 +74,6 @@ As I'm trying to get anyone and everyone involved to start using and breaking th
 ["Elixir in Action"](https://www.manning.com/books/elixir-in-action), book by Saša Jurić --> Focuses on real-world applications 
 
  ["The Little Elixir & OTP Guidebook"](https://www.manning.com/books/the-little-elixir-and-otp-guidebook), book by Benjamin Tan Wei Hao --> provides more development path and examples with OTP.
+
+## The BEAM VM itself
+The technology that makes this possible at at all is the [BEAM virtual machine](https://blog.stenmans.org/theBeamBook/#_preface). How any why it works is a good study for any thought on distributed processing in general.
