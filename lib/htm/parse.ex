@@ -4,10 +4,11 @@ defmodule HTM.Parser do
   alias HTM.Conv
 
   def parse(request) do
-    [top, params_string] =
-      request
-      |> String.split("\r\n\r\n")
+    top = ""
+    params_string = ""
 
+    [top, params_string] = request |> String.split("\n\n")
+    
     [request_line | header_lines] = String.split(top, "\n")
 
     [method, path, _] = String.split(request_line, " ")
