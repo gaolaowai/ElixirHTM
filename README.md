@@ -23,7 +23,7 @@ iex -S mix
 curl http://localhost:4000/pool/start/100
 ```
 
-## Sending in SDR data
+## Sending in encoded data
 ```bash
 curl http://localhost:4000/SDR/10010100101001010010100101001010010100101001010010100101001010010100101001010010100101111100000
 ```
