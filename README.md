@@ -16,19 +16,20 @@ mix deps.get
 
 iex -S mix
 ```
-
-## Starting a pool
+## Interacting with server
+In development: [JSON API](https://github.com/gaolaowai/ElixirHTM/blob/master/JSON_API.md)
+### Starting a pool
 1. Hit the local http server at port 4000, letting it know our input encodings will be 100 bits long.
 ```
 curl http://localhost:4000/pool/start/100
 ```
 
-## Sending in encoded data
+### Sending in encoded data
 ```bash
 curl http://localhost:4000/SDR/10010100101001010010100101001010010100101001010010100101001010010100101001010010100101111100000
 ```
 
-## Getting pool state
+### Getting pool state
 ```bash
 curl http://localhost:4000/pool/state/
 ```
