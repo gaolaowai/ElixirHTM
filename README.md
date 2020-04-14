@@ -57,7 +57,7 @@ For example, to store connections as matrices instead of lists of bits. Early re
 https://github.com/versilov/matrex
 
 # Elixir resources
-As I'm trying to get anyone and everyone involved to start using and breaking this, it only seems right to provide a list of resources on Elixir itself. If you have some familarity with Ruby, Elm, or even Erlang, Elixir itself isn't too difficult to parse and pick up.
+As I'm trying to get anyone and everyone involved to start using and breaking this, it only seems right to provide a list of resources on [Elixir](https://github.com/elixir-lang/elixir/wiki/FAQ) itself. If you have some familarity with Ruby, Elm, or even Erlang, Elixir itself isn't too difficult to parse and pick up.
 
 ## Free online resources for learning:
 ["Joy of Elixir"](https://joyofelixir.com/toc.html) --> Free tutorial progressively going from basic to intermediate level.
