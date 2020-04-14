@@ -62,6 +62,8 @@ As I'm trying to get anyone and everyone involved to start using and breaking th
 ## Free online resources for learning:
 ["Joy of Elixir"](https://joyofelixir.com/toc.html) --> Free tutorial progressively going from basic to intermediate level.
 
+["Learn with Me: Elixir"](https://inquisitivedeveloper.com/tag/lwm-elixir/) --> quite a few tutorials, stretching from beginner to more advanced.
+
 ["Elixir School"](https://elixirschool.com/en/) --> Covers from basic all the way to advanced usage, including some OTP concepts.
 
 ["Getting Started"](https://elixir-lang.org/getting-started/introduction.html) pages on elixir-lang.org. Beginner to advanced.
