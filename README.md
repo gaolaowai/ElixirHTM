@@ -16,19 +16,20 @@ mix deps.get
 
 iex -S mix
 ```
-
-## Starting a pool
+## Interacting with server
+In development: [JSON API](https://github.com/gaolaowai/ElixirHTM/blob/master/JSON_API.md)
+### Starting a pool
 1. Hit the local http server at port 4000, letting it know our input encodings will be 100 bits long.
 ```
 curl http://localhost:4000/pool/start/100
 ```
 
-## Sending in SDR data
+### Sending in encoded data
 ```bash
 curl http://localhost:4000/SDR/10010100101001010010100101001010010100101001010010100101001010010100101001010010100101111100000
 ```
 
-## Getting pool state
+### Getting pool state
 ```bash
 curl http://localhost:4000/pool/state/
 ```
@@ -57,10 +58,12 @@ For example, to store connections as matrices instead of lists of bits. Early re
 https://github.com/versilov/matrex
 
 # Elixir resources
-As I'm trying to get anyone and everyone involved to start using and breaking this, it only seems right to provide a list of resources on Elixir itself. If you have some familarity with Ruby, Elm, or even Erlang, Elixir itself isn't too difficult to parse and pick up.
+As I'm trying to get anyone and everyone involved to start using and breaking this, it only seems right to provide a list of resources on [Elixir](https://github.com/elixir-lang/elixir/wiki/FAQ) itself. If you have some familarity with Ruby, Elm, or even Erlang, Elixir itself isn't too difficult to parse and pick up.
 
 ## Free online resources for learning:
 ["Joy of Elixir"](https://joyofelixir.com/toc.html) --> Free tutorial progressively going from basic to intermediate level.
+
+["Learn with Me: Elixir"](https://inquisitivedeveloper.com/tag/lwm-elixir/) --> quite a few tutorials, stretching from beginner to more advanced.
 
 ["Elixir School"](https://elixirschool.com/en/) --> Covers from basic all the way to advanced usage, including some OTP concepts.
 
