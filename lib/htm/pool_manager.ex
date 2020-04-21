@@ -11,6 +11,11 @@ defmodule HTM.PoolManager do
 
   def start_links(args) do
 
+    # Eventually pass this in at init
+    pool_id = "pool_id_here"
+
+    # Create the initial map of distal connections to input space.
+    # Each column then shuffles their own copy of this at startup.
     default_distals = Range.new(1, args.sdr_size)
       |> Enum.reduce([], fn x, acc -> if (x < args.number_of_connections) do [1|acc] else [0|acc] end end)
       |> HTM.BitMan.list_to_bitlist
@@ -20,7 +25,7 @@ defmodule HTM.PoolManager do
     # Start a number of processes, returning their pids as a list to be stored in local state.
     columns = for i <- Range.new(1, @number_of_columns), do: Column.start(i, default_distals)
 
-    state = %{columns: columns, poolstate: %{}, prevwinners: %{}, counter: 0, start_time: System.os_time(), stop_time: System.os_time(), resting: [] }
+    state = %{pool_id: pool_id, columns: columns, poolstate: %{}, prevwinners: %{}, counter: 0, start_time: System.os_time(), stop_time: System.os_time(), resting: [] }
 
     HTM.Counter.start_link(0)
     GenServer.start_link(__MODULE__, state, name: __MODULE__)
@@ -47,6 +52,7 @@ defmodule HTM.PoolManager do
 
   def poolstate do
     GenServer.call(HTM.PoolManager, :pool_state)
+    |> to_zero_one
   end
 
   ############################################################
@@ -72,7 +78,7 @@ defmodule HTM.PoolManager do
     # newstate = %{}
 
     newstate = %{ state | poolstate: Map.update(state.poolstate, l_id, score, fn x -> if(resting) do 0.0 else x end end ) }
-    newstate = %{ state | resting: [ {l_id, resting} | state.resting] }
+    newstate = %{ newstate | resting: [ {l_id, resting} | state.resting] }
 
     HTM.Counter.increment(score)
     counter_state = HTM.Counter.value()
@@ -91,8 +97,11 @@ defmodule HTM.PoolManager do
         _ = for {column, score} <- winners, do: GenServer.cast( column, {:strengthen_connections, newstate.prevwinners} )
       end
 
+      newstate = %{ newstate | prevwinners: winners }
+
       IO.inspect ((System.os_time() - state.start_time)/1_000_000) # The result of "System.os_time()" is us!
       IO.puts "After counter #{counter_state.counter}: #{inspect HTM.Counter.value()}"
+      IO.puts "Winners this round: #{inspect newstate.prevwinners}"
     end
 
     {:reply, :ok, newstate}
@@ -106,7 +115,8 @@ defmodule HTM.PoolManager do
   end
 
   def handle_call(:pool_state, _from, state) do
-    {:reply, state.resting, state}
+
+    {:reply, newstate.prevwinners, state}
   end
 
   defp send_sdr(sdr, columns) when is_list(sdr) do
@@ -127,6 +137,11 @@ defmodule HTM.PoolManager do
   defp resetwinners(state) do
     %{ state | prevwinners: %{} }
   end
+
+  defp to_zero_one(list_of_bools) do
+    for {_,x} <- list_of_bools, do: if(x == true, do: 1, else: 0)
+  end
+
 end
 
 defmodule HTM.Counter do

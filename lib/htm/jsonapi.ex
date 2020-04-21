@@ -11,17 +11,17 @@ defmodule HTM.JsonDispatcher do
     end
 
     def dispatch(%{ "action" => "get_state"} = json) do
-      # Create pool
+      # get_state pool
       "get_state pool"
     end
 
     def dispatch(%{ "action" => "get_group_state" } = json) do
-      # Create pool
+      # get_group_statel
       "get_group_state"
     end
 
     def dispatch(%{ "action" => "submit_encoding" } = json) do
-      # Create pool
+      # send_encoding
       "send_encoding"
     end
 

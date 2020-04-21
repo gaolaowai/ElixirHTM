@@ -21,7 +21,7 @@ end
 
 defmodule HTM.ServerTest do
 
-  def request_pool do
+  def json_request_pool do
     """
     POST /API/JSON HTTP/1.1
     Host: example.com
@@ -32,7 +32,7 @@ defmodule HTM.ServerTest do
     """
   end
 
-  def request_send_encoding do
+  def json_request_send_encoding do
     """
     POST /API/JSON HTTP/1.1
     Host: example.com
@@ -49,32 +49,70 @@ defmodule HTM.ServerTest do
     """
   end
 
-  def request_get_poolstate do
-  """
-  POST /API/JSON HTTP/1.1
-  Host: example.com
-  User-Agent: ExampleBrowser/1.0
-  Accept: */*
+  def json_request_get_poolstate do
+    """
+    POST /API/JSON HTTP/1.1
+    Host: example.com
+    User-Agent: ExampleBrowser/1.0
+    Accept: */*
 
-  { "action": "get_state",
-  "params":
-       {
-        "pool_id":"assigned/prefferid",
-        "which_state": "TM/SP/ALL",
-        "post_back_enable": true,
-        "post_back_url": "https://ip:port/endpoint",
-        "visual?": true
-       }
-  }
-  """
+    { "action": "get_state",
+    "params":
+        {
+          "pool_id":"assigned/prefferid",
+          "which_state": "TM/SP/ALL",
+          "post_back_enable": true,
+          "post_back_url": "https://ip:port/endpoint",
+          "visual?": true
+        }
+    }
+    """
   end
 
-  def testserver do
+  def request_pool do
+    """
+    GET /pool/start/100 HTTP/1.1
+    Host: example.com
+    User-Agent: ExampleBrowser/1.0
+    Accept: */*
+
+    """
+  end
+
+  def request_send_encoding do
+    """
+    GET /SDR/10010100101001010010100101001010010100101001010010100101001010010100101001010010100101111100000 HTTP/1.1
+    Host: example.com
+    User-Agent: ExampleBrowser/1.0
+    Accept: */*
+
+    """
+  end
+
+  def request_get_poolstate do
+    """
+    GET /pool/state/ HTTP/1.1
+    Host: example.com
+    User-Agent: ExampleBrowser/1.0
+    Accept: */*
+
+    """
+  end
+
+  def testserver_json do
+    HTM.HttpClient.send_request(json_request_pool, "127.0.0.1", 4000)
+    :timer.sleep(1000)
+    HTM.HttpClient.send_request(json_request_send_encoding, "127.0.0.1", 4000)
+    :timer.sleep(3000)
+    HTM.HttpClient.send_request(json_request_get_poolstate, "127.0.0.1", 4000)
+  end
+
+  def testserver_get do
     HTM.HttpClient.send_request(request_pool, "127.0.0.1", 4000)
     :timer.sleep(1000)
     HTM.HttpClient.send_request(request_send_encoding, "127.0.0.1", 4000)
     :timer.sleep(3000)
-    HTM.HttpClient.send_request(request_get_poolstate, "127.0.0.1", 4000)
+    IO.puts "Response: #{HTM.HttpClient.send_request(request_get_poolstate, "127.0.0.1", 4000)}"
   end
 
 end

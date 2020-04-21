@@ -7,8 +7,11 @@ defmodule HTM.Parser do
     top = ""
     params_string = ""
 
-    [top, params_string] = request |> String.split("\n\n")
-    
+    request = request |> String.replace("\r\n", "\n")
+    IO.puts "replaced: #{inspect request}"
+
+    [top, params_string] = request  |> String.split("\n\n")
+
     [request_line | header_lines] = String.split(top, "\n")
 
     [method, path, _] = String.split(request_line, " ")
@@ -24,7 +27,7 @@ defmodule HTM.Parser do
       path: path,
       params: params,
       headers: headers,
-      message_body: Poison.decode!(params_string)
+      message_body: params_string
     }
   end
 
