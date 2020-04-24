@@ -15,6 +15,7 @@ defmodule HTM do
 
   def start(_type, _args) do
     IO.puts "Starting the application..."
+    :observer.start
     HTM.Supervisor.start_link()
   end
 end

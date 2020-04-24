@@ -1,12 +1,18 @@
 defmodule HTM.KickStarter do
   use GenServer
 
+  #
+  # This gets called by the supervisor.
+  #
   def start_link(_arg) do
     IO.puts "Starting the kickstarter..."
     state = %{server_pid: nil, pool_man_pid: nil}
     GenServer.start_link(__MODULE__, state, name: __MODULE__)
   end
 
+  #
+  # This is the first function that gets called when any GenServer starts (start_link).
+  #
   def init(state) do
     Process.flag(:trap_exit, true)
     server_pid = start_server()

@@ -1,5 +1,6 @@
 defmodule HTM.Column do
   use GenServer
+  use Agent
   alias HTM.BitMan
 
   @strengthen_amount 0.1
@@ -63,16 +64,16 @@ defmodule HTM.Column do
       |> Enum.reduce([], fn x, acc -> [ bit_to_int(x) | acc] end)
 
     # Create blank proximal connections
-    proximal_cells_connections = for i <- Range.new(1, @column_depth), do: %{i => []} 
+    proximal_cells_connections = for i <- Range.new(1, @column_depth), do: %{i => []}
     proximal_cells_connections = proximal_cells_connections |> Enum.reduce(%{}, fn x, acc -> Map.merge(x, acc) end)
 
     # Create and randomize cell vote map
     proximal_cells_activation_votes = for i <- Range.new(1, @column_depth), do: %{i => :rand.uniform(20)}
-    proximal_cells_activation_votes = proximal_cells_activation_votes 
+    proximal_cells_activation_votes = proximal_cells_activation_votes
       |> Enum.reduce(%{}, fn x, acc -> Map.merge(x, acc) end)
 
-    new_state = %{ state | distal_connections: randomized_distals, 
-                           distal_strengths: initial_strengths, 
+    new_state = %{ state | distal_connections: randomized_distals,
+                           distal_strengths: initial_strengths,
                            proximal_cells_connections: proximal_cells_connections,
                            proximal_cells_activation_votes: proximal_cells_activation_votes
                  }
@@ -95,7 +96,7 @@ defmodule HTM.Column do
   # Message coming as --->   {:strengthen_connections, newstate.prevwinners}
   def handle_cast({:strengthen_connections, winners}, state) do
     new_strengths = strengthen_distals(state)
-    
+
     # Find a winning cell in the column for this pattern
     winning_cell = find_and_strengthen_winner(state, winners)
 
@@ -202,6 +203,7 @@ defmodule HTM.Column do
   end
 
   defp report_winner_cell(state, winning_cell) do
+    HTM.WinnersTracker.add_winner({state.id, winning_cell})
     GenServer.call(HTM.PoolManager, {:i_won, {state.id, winning_cell}})
     {state, winning_cell}
   end
@@ -212,18 +214,18 @@ defmodule HTM.Column do
   end
 
   defp vote_for_cell(state, cell) do
-    %{ state | proximal_cells_activation_votes: 
+    %{ state | proximal_cells_activation_votes:
                             Map.update(
-                              state.proximal_cells_activation_votes, 
-                              cell, 
-                              state.proximal_cells_activation_votes[cell], 
+                              state.proximal_cells_activation_votes,
+                              cell,
+                              state.proximal_cells_activation_votes[cell],
                               fn x -> x + 1 end
                               )
      }
   end
 
   defp find_and_strengthen_winner(state, winners) do
-    
+
     # Find winner based on highest value
     { winning_cell, _ } = state.proximal_cells_activation_votes
       |> Enum.max_by(fn {key, value} -> value end)
@@ -231,7 +233,7 @@ defmodule HTM.Column do
     # Register column:cell with previously winning column:cells
     # Send :call_me to previously winning cells, with column_id and cell_id, as "{:call_me, {column, cell}}"
     _ = for {remote_winning_column, remote_winner_cell} <- winners, do: GenServer.cast( remote_winning_column, {:call_me, {state.id, winning_cell, remote_winner_cell} } )
-    
+
     {state, winning_cell}
   end
 
@@ -239,10 +241,11 @@ defmodule HTM.Column do
     # grab, prepend, and bind our existing list
     # Each "cell" is a list of tuples, in format of {callee_column, callee_cell}
     new_callee = [ {caller_column_id, caller_winning_cell} | state.proximal_cells_connections[local_cell] ]
+    IO.inspect new_callee
 
     # update it inside state
     %{ state | proximal_cells_connections: Map.update(state.proximal_cells_connections, local_cell, new_callee, fn x -> x end )}
-    IO.inspect new_callee
+
   end
 
 end
