@@ -90,26 +90,27 @@ defmodule HTM.Column do
   # Message coming as --->   {:strengthen_connections, newstate.prevwinners}
   def handle_cast(:strengthen_connections, state) do
 
-
-    # IO.puts "#{state.id}: NOT DEAD YETS...\n\n\n\n\n"
-
-    # pull out previous winners
-    winners = HTM.WinnersTracker.get_prev_winners()
-    # IO.puts "\n\n\n\n\n#{state.id} --> :strengthen_distals --> winners: #{inspect winners} "
-
     # Find a winning cell in the column for this pattern
     { winning_cell, _ } = state.proximal_cells_activation_votes
       |> Enum.max_by(fn {_, value} -> value end)
+      IO.puts "\n\n\n\n\n#{state.id} --> :strengthen_distals --> winning_cell: #{inspect winning_cell} "
 
-    # Find a winning cell in the column for this pattern
-    # IO.puts "\n\n#{state.id} --> :strengthen_distals --> winning cell:  #{inspect winning_cell}"
+
 
     # Tell the WinnerTracker who won in this column (used as "winners" for the next round)
     HTM.WinnersTracker.add_winner({state.id, winning_cell})
 
-    ##### GenServer.call(HTM.PoolManager, {:i_won, {state.id, winning_cell}})
+    # pull out previous winners
+    winners = HTM.WinnersTracker.get_prev_winners()
+    IO.puts "\n\n\n\n\n#{state.id} --> :strengthen_distals --> winners: #{inspect winners} "
 
-    # Tell the pool who won in this column (used as "winners" for the next round)
+    # Tell previous winners who we are
+    tmplist = for {prev_win_column, prev_win_cell} <- winners,
+        do: GenServer.cast( prev_win_column,
+                            {:call_me, {state.id, winning_cell, prev_win_cell}}
+                          )
+    IO.puts "\n\n\n\n\n#{state.id} --> :strengthen_distals --> tmplist: #{inspect tmplist} "
+    # {caller_column_id, caller_winning_cell, local_cell}
 
     # signal our cell's proximal connections
     call_to_proximals({state, winning_cell})
@@ -139,9 +140,9 @@ defmodule HTM.Column do
     # peeker(connected_this_turn, "connected_this_turn:")
 
     connection_count = Enum.sum(connected_this_turn)
-    if (state.resting) do
-      IO.puts "#{state.id}: resting this turn."
-    end
+    # if (state.resting) do
+    #   IO.puts "#{state.id}: resting this turn."
+    # end
     # IO.puts "#{state.id}: #{inspect connection_count} this turn."
 
     new_state = %{ state |  connected_this_turn: connected_this_turn,
@@ -154,20 +155,17 @@ defmodule HTM.Column do
 
     new_state = %{ new_state | resting: false }
 
-    # peeker(new_state, "column state:")
-
     {:noreply, new_state}
   end
 
   def handle_cast({:call_me, msg}, state) do
     new_state = add_callees(state, msg)
-    IO.puts ":call_me --> #{inspect new_state}"
     {:noreply, new_state}
-    # {:reply, state, state}
   end
 
   def handle_cast({:vote, cell}, state) do
     new_state = vote_for_cell(state, cell)
+
     {:noreply, new_state}
   end
 
@@ -240,7 +238,7 @@ defmodule HTM.Column do
   end
 
   defp report_winner_cell(state, winning_cell) do
-    # IO.puts "\n\nreport_winner_cell --> #{state.id} --> winning cell:  #{inspect winning_cell}"
+    IO.puts "\n\nreport_winner_cell --> #{state.id} --> winning cell:  #{inspect winning_cell}"
     HTM.WinnersTracker.add_winner({state.id, winning_cell})
     GenServer.call(HTM.PoolManager, {:i_won, {state.id, winning_cell}})
     {state, winning_cell}
@@ -250,7 +248,7 @@ defmodule HTM.Column do
     # IO.puts "\n\--> #{state.id} nstate.proximal_cells_connections[winning_cell]:  #{inspect state.proximal_cells_connections[winning_cell]}"
 
     case state.proximal_cells_connections[winning_cell] do
-      nil ->  IO.puts "Hit nil!\n"
+      [] ->  IO.puts "Hit nil!\n"
               {state, winning_cell}
 
       _ -> _ = for {column, cell} <- state.proximal_cells_connections[winning_cell], do: GenServer.cast(column, {:vote, cell})
@@ -270,16 +268,23 @@ defmodule HTM.Column do
      }
   end
 
+  defp call_previous_winners({caller_column_id, caller_winning_cell, local_cell}) do
+    {caller_column_id, caller_winning_cell, local_cell}
+  end
 
   defp add_callees(state, {caller_column_id, caller_winning_cell, local_cell}) do
+
     # grab, prepend, and bind our existing list
     # Each "cell" is a list of tuples, in format of {callee_column, callee_cell}
-    new_callee = [ {caller_column_id, caller_winning_cell} | state.proximal_cells_connections[local_cell] ]
-    IO.puts" new_callee: #{inspect new_callee}"
+    new_callee = {caller_column_id, caller_winning_cell}
+
+    # Append to front of list, while grabbing only (up to) @max_calless worth of items. Drops off old connections.
+    new_proximal_connections = Map.update(state.proximal_cells_connections, local_cell, new_callee, &[ new_callee|Enum.take( &1, @max_callees )])
+    # IO.puts "\n\n\n\n\n new_callee | local_cell | new_proximal_connections: #{inspect new_callee}|#{inspect local_cell} | #{inspect new_proximal_connections}\n\n\n\n\n"
 
     # update it inside state
-    %{ state | proximal_cells_connections: Map.update(state.proximal_cells_connections, local_cell, new_callee, fn x -> x end )}
-
+    new_state = %{ state | proximal_cells_connections: new_proximal_connections }
+    new_state
   end
 
 end
