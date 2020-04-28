@@ -4,10 +4,22 @@ defmodule HTM.PoolManager do
   alias HTM.Column
   alias HTM.BitMan
 
-  @number_of_columns 512 # acts like a global within this module
+  @number_of_columns 2048 # acts like a global within this module
   @connection_percent_to_sdr 0.7
   @sparsity_percentage 0.02 #between 0.00 and 1.0
   @sparsity trunc(@number_of_columns * @sparsity_percentage)
+
+  defmodule State do
+    defstruct pool_id: "pool_id",
+    columns: [],
+    poolstate: %{},
+    prevwinners: %{},
+    counter: 0,
+    start_time: System.os_time(),
+    stop_time: System.os_time(),
+    resting: [],
+    turn_complete: true
+  end
 
   ##################################################################
   #
@@ -32,10 +44,11 @@ defmodule HTM.PoolManager do
 
     # Start a number of processes, returning their pids as a list to be stored in local state.
     columns = for i <- Range.new(1, @number_of_columns), do: Column.start(pool_id, i, default_distals)
+    # columns = for i <- Range.new(1, @number_of_columns), do: Kernel.spawn_link(HTM.Column, :start, [pool_id, i, default_distals])
 
-    state = %{pool_id: pool_id, columns: columns, poolstate: %{}, prevwinners: %{}, counter: 0, start_time: System.os_time(), stop_time: System.os_time(), resting: [], turn_complete: true }
+    state = %State{columns: columns, pool_id: pool_id}
 
-    HTM.Counter.start_link(0)
+    HTM.Counter.start_link( 0, pool_id )
     HTM.WinnersTracker.start_link(pool_id)
     GenServer.start_link(__MODULE__, state, name: __MODULE__)
   end
@@ -47,7 +60,6 @@ defmodule HTM.PoolManager do
   ############################################################
 
   def send_sdr(sdr) do
-    HTM.WinnersTracker.roll_winners()
     sdr = sdr |> String.to_charlist|> BitMan.list_to_bitlist
     # IO.inspect sdr
     GenServer.cast(HTM.PoolManager, {:send_sdr, sdr})
@@ -84,10 +96,18 @@ defmodule HTM.PoolManager do
   end
 
   def handle_cast({:send_sdr, sdr}, state) do
-    HTM.Counter.reset()
-    state = %{ state | start_time: System.os_time(), resting: [], turn_complete: false}
-    send_sdr(sdr, state.columns)
-    {:noreply, state}
+    if(state.turn_complete) do
+      HTM.WinnersTracker.roll_winners()
+      HTM.Counter.reset()
+      HTM.Counter.increment_turn()
+      state = %State{ state | start_time: System.os_time(), resting: [], turn_complete: false}
+      send_sdr(sdr, state.columns)
+      {:noreply, state}
+    else
+      GenServer.cast(HTM.PoolManager, {:send_sdr, sdr})
+      {:noreply, state}
+    end
+
   end
 
   @doc """
@@ -95,8 +115,8 @@ defmodule HTM.PoolManager do
   """
   def handle_call({:incr_counter, {l_id, score, resting}}, _from, state) do
 
-    newstate = %{ state | poolstate: Map.update(state.poolstate, l_id, score, fn x -> if(resting) do 0.0 else x end end ) }
-    newstate = %{ newstate | resting: [ {l_id, resting} | state.resting] }
+    newstate = %State{ state | poolstate: Map.update(state.poolstate, l_id, score, fn x -> if(resting) do 0.0 else x end end ) }
+    newstate = %State{ newstate | resting: [ {l_id, resting} | state.resting] }
 
     HTM.Counter.increment(score)
     counter_state = HTM.Counter.value()
@@ -109,7 +129,7 @@ defmodule HTM.PoolManager do
 
   def handle_call({:i_won, {l_id, cell}}, _from, state) do
     peeker(state.prevwinners)
-    newstate = %{ state | prevwinners: Map.update(state.prevwinners, l_id, cell, fn x -> x end) }
+    newstate = %State{ state | prevwinners: Map.update(state.prevwinners, l_id, cell, fn x -> x end) }
 
     {:reply, :ok, newstate}
   end
@@ -144,19 +164,24 @@ defmodule HTM.PoolManager do
 
       @number_of_columns ->
           # Choose some winners!
+
           winners = pick_winners(newstate, average)
           IO.puts "WINNERS:  #{inspect winners}"
           IO.puts "AVERAGE:  #{inspect average}"
           IO.puts "SPARSITY:  #{inspect @sparsity}"
+          IO.puts "COUNTER_STATE:  #{inspect counter_state}"
+          IO.puts "TURN COUNTER:  #{inspect counter_state.turncounter}"
+
 
           # handle first run
           _ = for {column, _} <- winners, do: GenServer.cast( column, :strengthen_connections )
 
-          newstate = %{ newstate | prevwinners: list_to_map(winners), turn_complete: false }
+          # newstate = %State{ newstate | prevwinners: list_to_map(winners), turn_complete: false }
+          newstate = %State{ newstate | turn_complete: true }
 
           IO.inspect ((System.os_time() - newstate.start_time)/1_000_000) # The result of "System.os_time()" is us!
           IO.puts "After counter #{counter_state.counter}: #{inspect HTM.Counter.value()}"
-          IO.puts "Winners this round: #{inspect newstate.prevwinners}"
+          IO.puts "Winners this round: #{inspect HTM.WinnersTracker.get_curr_winners()}"
 
           newstate
       _ ->

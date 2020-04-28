@@ -7,6 +7,7 @@ defmodule HTM.Column do
   @weaken_amount 0.1
   @column_depth 10
   @max_callees 512
+  @predictive_threshold 20
 
   # Define our state struct for our column
   defmodule State do
@@ -73,7 +74,7 @@ defmodule HTM.Column do
     proximal_cells_activation_votes = proximal_cells_activation_votes
       |> Enum.reduce(%{}, fn x, acc -> Map.merge(x, acc) end)
 
-    new_state = %{ state | distal_connections: randomized_distals,
+    new_state = %State{ state | distal_connections: randomized_distals,
                            distal_strengths: initial_strengths,
                            proximal_cells_connections: proximal_cells_connections,
                            proximal_cells_activation_votes: proximal_cells_activation_votes
@@ -84,43 +85,39 @@ defmodule HTM.Column do
     {:ok, new_state}
   end
 
+
   @doc """
   Accepts message: {:strengthen_connections, newstate.prevwinners}
   """
-  # Message coming as --->   {:strengthen_connections, newstate.prevwinners}
   def handle_cast(:strengthen_connections, state) do
 
     # Find a winning cell in the column for this pattern
     { winning_cell, _ } = state.proximal_cells_activation_votes
       |> Enum.max_by(fn {_, value} -> value end)
-      IO.puts "\n\n\n\n\n#{state.id} --> :strengthen_distals --> winning_cell: #{inspect winning_cell} "
-
-
-
+    turn = HTM.Counter.get_turn()
+    if (turn >= 23) do
+      IO.puts "winner data: {#{inspect state.id}, #{inspect winning_cell}}"
+    end
     # Tell the WinnerTracker who won in this column (used as "winners" for the next round)
     HTM.WinnersTracker.add_winner({state.id, winning_cell})
 
     # pull out previous winners
     winners = HTM.WinnersTracker.get_prev_winners()
-    IO.puts "\n\n\n\n\n#{state.id} --> :strengthen_distals --> winners: #{inspect winners} "
 
     # Tell previous winners who we are
-    tmplist = for {prev_win_column, prev_win_cell} <- winners,
+    _ = for {prev_win_column, prev_win_cell} <- winners,
         do: GenServer.cast( prev_win_column,
                             {:call_me, {state.id, winning_cell, prev_win_cell}}
                           )
-    IO.puts "\n\n\n\n\n#{state.id} --> :strengthen_distals --> tmplist: #{inspect tmplist} "
-    # {caller_column_id, caller_winning_cell, local_cell}
 
     # signal our cell's proximal connections
     call_to_proximals({state, winning_cell})
 
     # update distal strengths
     new_strengths = strengthen_distals(state)
-    # IO.puts "\n\n#{state.id} --> :strengthen_distals --> new_strength:  #{inspect new_strengths}"
 
-    newstate = %{ state | distal_strengths: new_strengths, resting: true }
-    # IO.puts "After strengthening:  #{inspect newstate}"
+    newstate = %State{ state | distal_strengths: new_strengths, resting: true }
+
     {:noreply, newstate}
   end
 
@@ -128,24 +125,17 @@ defmodule HTM.Column do
     new_strengths = Enum.zip(state.connected_this_turn, state.distal_strengths)
       |> Enum.reduce([], fn x, acc -> [ weaken?(x) | acc] end)
 
-    newstate = %{ state | distal_strengths: new_strengths }
+    newstate = %State{ state | distal_strengths: new_strengths }
     {:noreply, newstate}
   end
 
   def handle_cast({:check_sdr, sdr}, state) do
-    # IO.puts "hit cast checksdr..."
     sdrsize = sdr |> Enum.count
     connected_this_turn = BitMan.bitstring_maskand(state.distal_connections, sdr)
 
-    # peeker(connected_this_turn, "connected_this_turn:")
-
     connection_count = Enum.sum(connected_this_turn)
-    # if (state.resting) do
-    #   IO.puts "#{state.id}: resting this turn."
-    # end
-    # IO.puts "#{state.id}: #{inspect connection_count} this turn."
 
-    new_state = %{ state |  connected_this_turn: connected_this_turn,
+    new_state = %State{ state |  connected_this_turn: connected_this_turn,
                             connectionscore: connection_count,
                             sdr_this_turn: sdr,
                             sdr_size: sdrsize
@@ -153,7 +143,7 @@ defmodule HTM.Column do
 
     GenServer.call(HTM.PoolManager, {:incr_counter, {new_state.id, new_state.connectionscore, new_state.resting}})
 
-    new_state = %{ new_state | resting: false }
+    new_state = %State{ new_state | resting: false }
 
     {:noreply, new_state}
   end
@@ -248,7 +238,7 @@ defmodule HTM.Column do
     # IO.puts "\n\--> #{state.id} nstate.proximal_cells_connections[winning_cell]:  #{inspect state.proximal_cells_connections[winning_cell]}"
 
     case state.proximal_cells_connections[winning_cell] do
-      [] ->  IO.puts "Hit nil!\n"
+      [] ->  # IO.puts "Hit nil!\n"
               {state, winning_cell}
 
       _ -> _ = for {column, cell} <- state.proximal_cells_connections[winning_cell], do: GenServer.cast(column, {:vote, cell})
@@ -258,18 +248,31 @@ defmodule HTM.Column do
   end
 
   defp vote_for_cell(state, cell) do
-    %{ state | proximal_cells_activation_votes:
-                            Map.update(
-                              state.proximal_cells_activation_votes,
-                              cell,
-                              state.proximal_cells_activation_votes[cell],
-                              fn x -> x + 1 end
-                              )
-     }
+    newmap = Map.update(
+      state.proximal_cells_activation_votes,
+      cell,
+      state.proximal_cells_activation_votes[cell],
+      fn x -> x + 1 end
+    )
+    if ( ! state.predictive ) do
+      if predictive?(newmap, cell) do
+        %State{ state | proximal_cells_activation_votes: newmap, predictive: true }
+      end
+    else
+      %{ state | proximal_cells_activation_votes: newmap }
+    end
   end
 
   defp call_previous_winners({caller_column_id, caller_winning_cell, local_cell}) do
     {caller_column_id, caller_winning_cell, local_cell}
+  end
+
+  defp predictive?(newmap, cell) do
+    if (newmap[cell] > @predictive_threshold) do
+      true
+    else
+      false
+    end
   end
 
   defp add_callees(state, {caller_column_id, caller_winning_cell, local_cell}) do
@@ -283,7 +286,7 @@ defmodule HTM.Column do
     # IO.puts "\n\n\n\n\n new_callee | local_cell | new_proximal_connections: #{inspect new_callee}|#{inspect local_cell} | #{inspect new_proximal_connections}\n\n\n\n\n"
 
     # update it inside state
-    new_state = %{ state | proximal_cells_connections: new_proximal_connections }
+    new_state = %State{ state | proximal_cells_connections: new_proximal_connections }
     new_state
   end
 

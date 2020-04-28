@@ -8,6 +8,7 @@
                         'Elixir.HTM.HttpServer','Elixir.HTM.JsonDispatcher',
                         'Elixir.HTM.KickStarter','Elixir.HTM.Parser',
                         'Elixir.HTM.Plugins','Elixir.HTM.PoolManager',
+                        'Elixir.HTM.PoolManager.State',
                         'Elixir.HTM.ServerTest','Elixir.HTM.Supervisor',
                         'Elixir.HTM.WinnersTracker']},
               {registered,[]},
