@@ -71,7 +71,7 @@ As I'm trying to get anyone and everyone involved to start using and breaking th
 
 [The "Docs"](https://elixir-lang.org/docs.html), same domain
 
-["The Soul of Erlang and Elixir"](https://youtu.be/JvBT4XBdoUE) Talk by Saša Jurić, shows use of BEAM in live setting.
+["The Soul of Erlang and Elixir"](https://youtu.be/JvBT4XBdoUE) HIGHLY RECOMMENDED!!! Talk by Saša Jurić, shows use of BEAM in live setting.
 
 
 ## Non-free, but *very* useful:
